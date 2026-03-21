@@ -1,0 +1,3 @@
+# Compat (Legacy)
+
+::: qgendapy.compat

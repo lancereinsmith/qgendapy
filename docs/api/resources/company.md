@@ -1,0 +1,3 @@
+# Company
+
+::: qgendapy.resources.company

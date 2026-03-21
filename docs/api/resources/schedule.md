@@ -1,0 +1,3 @@
+# Schedule
+
+::: qgendapy.resources.schedule

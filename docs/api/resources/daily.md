@@ -1,0 +1,3 @@
+# Daily
+
+::: qgendapy.resources.daily

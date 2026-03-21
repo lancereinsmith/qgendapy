@@ -1,0 +1,3 @@
+# Task
+
+::: qgendapy.resources.task

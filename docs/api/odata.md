@@ -1,0 +1,3 @@
+# OData
+
+::: qgendapy.odata

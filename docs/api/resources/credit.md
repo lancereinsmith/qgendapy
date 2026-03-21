@@ -1,0 +1,3 @@
+# Credit
+
+::: qgendapy.resources.credit

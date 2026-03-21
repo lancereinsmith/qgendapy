@@ -1,0 +1,3 @@
+# Configuration
+
+::: qgendapy._config

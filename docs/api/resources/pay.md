@@ -1,0 +1,3 @@
+# Pay
+
+::: qgendapy.resources.pay
