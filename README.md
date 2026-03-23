@@ -2,6 +2,8 @@
 
 Modern Python client for the QGenda REST API.
 
+Documentation: [GitHub Pages Docs](https://lancereinsmith.github.io/qgendapy/)
+
 ## Features
 
 - **Full API coverage** -- 159 methods across 23 resource groups
