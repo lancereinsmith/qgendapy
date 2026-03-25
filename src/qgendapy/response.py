@@ -58,9 +58,10 @@ class QGendaResponse(Generic[T]):
         items: list[T] = []
 
         if model is not None:
+            _from_dict = getattr(model, "from_dict")  # noqa: B009
             if isinstance(data, list):
-                items = [model.from_dict(item) for item in data]  # type: ignore[attr-defined]
+                items = [_from_dict(item) for item in data]
             elif isinstance(data, dict):
-                items = [model.from_dict(data)]  # type: ignore[attr-defined]
+                items = [_from_dict(data)]
 
         return cls(data=data, status_code=resp.status_code, headers=headers, items=items)

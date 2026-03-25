@@ -2,6 +2,8 @@
 
 Modern Python client for the QGenda REST API.
 
+Thank you to JP Jorissen for laying the foundation for this library.
+
 ## Features
 
 - **Full API coverage** -- 159 methods across 23 resource groups covering the entire QGenda REST API
