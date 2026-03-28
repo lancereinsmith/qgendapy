@@ -99,9 +99,12 @@ def resolve_config(
         )
 
     # After the missing check above, these are guaranteed to be str
+    assert resolved_email is not None
+    assert resolved_password is not None
+    assert resolved_company_key is not None
     return QGendaConfig(
-        email=resolved_email,  # type: ignore[arg-type]  # narrowed by missing check
-        password=resolved_password,  # type: ignore[arg-type]  # narrowed by missing check
-        company_key=resolved_company_key,  # type: ignore[arg-type]  # narrowed by missing check
+        email=resolved_email,
+        password=resolved_password,
+        company_key=resolved_company_key,
         base_url=resolved_base_url,
     )
