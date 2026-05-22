@@ -173,6 +173,16 @@ class TestStaffTags:
         assert params["$filter"] == "StaffKey eq 's1'"
         assert params["$expand"] == "Tags"
 
+    def test_tags_escapes_single_quotes_in_staff_key(self):
+        # Without escaping, the quote would close the literal and inject syntax.
+        client = _mock_client([])
+        resource = StaffResource(client)
+        resource.tags("foo'bar")
+
+        call_args = client._transport.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert params["$filter"] == "StaffKey eq 'foo''bar'"
+
     def test_tags_handles_null_navigation(self):
         # QGenda often returns Tags as null even on tagged staff
         data = [{"StaffKey": "s1", "Tags": None}]

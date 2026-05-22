@@ -60,6 +60,18 @@ class OData:
         return odata
 
 
+def escape_literal(value: str) -> str:
+    """Escape a string literal for safe interpolation into an OData ``$filter``.
+
+    OData v4 escapes single quotes inside string literals by doubling them.
+    Use this on any value that might contain a quote before substituting it
+    into a filter expression — e.g.::
+
+        odata = OData().filter(f"StaffKey eq '{escape_literal(staff_key)}'")
+    """
+    return value.replace("'", "''")
+
+
 def merge_expand(
     expand: str | Sequence[str] | None,
     odata: OData | None,
@@ -67,9 +79,11 @@ def merge_expand(
     """Merge an ``expand=`` shortcut into an existing :class:`OData` builder.
 
     Returns ``odata`` unchanged when ``expand`` is ``None``. When ``expand`` is
-    provided, returns a new :class:`OData` whose ``$expand`` is set to a
-    comma-joined string of nav properties; if ``odata`` was provided, all of
-    its other params are preserved.
+    provided, returns a new :class:`OData` that preserves every other param
+    from ``odata`` and **concatenates** the new nav properties onto any
+    existing ``$expand`` (comma-joined). Use this so callers can pass both
+    ``odata=OData().expand("Tags")`` and ``expand="Skillset"`` without
+    silently dropping one.
     """
     if expand is None:
         return odata
@@ -77,5 +91,7 @@ def merge_expand(
     if odata is None:
         return OData().expand(expand_str)
     merged = OData()
-    merged._params = {**odata.to_params(), "$expand": expand_str}
+    merged._params = dict(odata.to_params())
+    existing = merged._params.get("$expand")
+    merged._params["$expand"] = f"{existing},{expand_str}" if existing else expand_str
     return merged

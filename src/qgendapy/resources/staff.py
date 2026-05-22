@@ -10,7 +10,7 @@ from qgendapy.models.staff import (
     StaffSkillset,
     StaffTag,
 )
-from qgendapy.odata import OData, merge_expand
+from qgendapy.odata import OData, escape_literal, merge_expand
 from qgendapy.resources._base import AsyncBaseResource, BaseResource
 from qgendapy.response import QGendaResponse
 
@@ -98,7 +98,7 @@ class StaffResource(BaseResource):
         ``client.tag.list()``.
         """
         params: dict[str, str] = {"companyKey": self._client.company_key}
-        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Tags")
+        odata = OData().filter(f"StaffKey eq '{escape_literal(staff_key)}'").expand("Tags")
         raw = self._get("/staffmember", params=params, odata=odata)
         tag_dicts = _extract_nested(raw.data, "Tags")
         return QGendaResponse(
@@ -129,7 +129,7 @@ class StaffResource(BaseResource):
         ``Skillset`` navigation populates only for admin-scoped accounts.
         """
         params: dict[str, str] = {"companyKey": self._client.company_key}
-        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Skillset")
+        odata = OData().filter(f"StaffKey eq '{escape_literal(staff_key)}'").expand("Skillset")
         raw = self._get("/staffmember", params=params, odata=odata)
         skillset_dicts = _extract_nested(raw.data, "Skillset")
         return QGendaResponse(
@@ -233,7 +233,7 @@ class AsyncStaffResource(AsyncBaseResource):
     async def tags(self, staff_key: str) -> QGendaResponse[StaffTag]:
         """Async version of :meth:`StaffResource.tags`."""
         params: dict[str, str] = {"companyKey": self._client.company_key}
-        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Tags")
+        odata = OData().filter(f"StaffKey eq '{escape_literal(staff_key)}'").expand("Tags")
         raw = await self._get("/staffmember", params=params, odata=odata)
         tag_dicts = _extract_nested(raw.data, "Tags")
         return QGendaResponse(
@@ -254,7 +254,7 @@ class AsyncStaffResource(AsyncBaseResource):
     async def skillsets(self, staff_key: str) -> QGendaResponse[StaffSkillset]:
         """Async version of :meth:`StaffResource.skillsets`."""
         params: dict[str, str] = {"companyKey": self._client.company_key}
-        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Skillset")
+        odata = OData().filter(f"StaffKey eq '{escape_literal(staff_key)}'").expand("Skillset")
         raw = await self._get("/staffmember", params=params, odata=odata)
         skillset_dicts = _extract_nested(raw.data, "Skillset")
         return QGendaResponse(
