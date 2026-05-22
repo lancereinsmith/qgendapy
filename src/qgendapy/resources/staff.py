@@ -44,6 +44,7 @@ class StaffResource(BaseResource):
         *,
         odata: OData | None = None,
         expand: str | Sequence[str] | None = None,
+        includes: str | None = None,
     ) -> QGendaResponse[StaffMember]:
         """List staff members.
 
@@ -52,8 +53,15 @@ class StaffResource(BaseResource):
         request expanded entities. Valid OData v4 nav names on
         ``StaffMemberDetailDto`` include ``Tags``, ``Skillset`` (singular),
         and ``Profiles``.
+
+        ``includes`` is QGenda's own related-entity selector (separate from
+        OData ``$expand``). For schedule-style endpoints it returns rich
+        nested data even under non-admin scope; on ``/staffmember`` its
+        behavior should be verified per-deployment.
         """
         params: dict[str, str] = {"companyKey": self._client.company_key}
+        if includes:
+            params["includes"] = includes
         return self._get(
             "/staffmember",
             params=params,
@@ -70,9 +78,14 @@ class StaffResource(BaseResource):
         *,
         odata: OData | None = None,
         expand: str | Sequence[str] | None = None,
+        includes: str | None = None,
     ) -> QGendaResponse[StaffMember]:
+        params: dict[str, str] = {}
+        if includes:
+            params["includes"] = includes
         return self._get(
             f"/staffmember/{staff_key}",
+            params=params or None,
             model=StaffMember,
             odata=merge_expand(expand, odata),
         )
@@ -199,8 +212,11 @@ class AsyncStaffResource(AsyncBaseResource):
         *,
         odata: OData | None = None,
         expand: str | Sequence[str] | None = None,
+        includes: str | None = None,
     ) -> QGendaResponse[StaffMember]:
         params: dict[str, str] = {"companyKey": self._client.company_key}
+        if includes:
+            params["includes"] = includes
         return await self._get(
             "/staffmember",
             params=params,
@@ -217,9 +233,14 @@ class AsyncStaffResource(AsyncBaseResource):
         *,
         odata: OData | None = None,
         expand: str | Sequence[str] | None = None,
+        includes: str | None = None,
     ) -> QGendaResponse[StaffMember]:
+        params: dict[str, str] = {}
+        if includes:
+            params["includes"] = includes
         return await self._get(
             f"/staffmember/{staff_key}",
+            params=params or None,
             model=StaffMember,
             odata=merge_expand(expand, odata),
         )

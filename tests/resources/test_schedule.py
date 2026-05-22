@@ -2,7 +2,13 @@ from unittest.mock import MagicMock
 
 import httpx
 
-from qgendapy.models.schedule import AuditLogEntry, OpenShift, Rotation, ScheduleEntry
+from qgendapy.models.schedule import (
+    AuditLogEntry,
+    OpenShift,
+    Rotation,
+    ScheduleEntry,
+    TagCategory,
+)
 from qgendapy.odata import OData
 from qgendapy.resources.schedule import ScheduleResource
 
@@ -68,6 +74,72 @@ class TestScheduleList:
         params = call_args.kwargs.get("params") or call_args[1].get("params", {})
         assert "$select" in params
         assert "$filter" in params
+
+    def test_staff_tags_parsed_into_categories(self):
+        # includes="StaffTags" returns nested {CategoryKey, CategoryName, Tags: [...]}
+        data = [
+            {
+                "ScheduleKey": "sk1",
+                "StartDate": "2024-01-01",
+                "StaffTags": [
+                    {
+                        "CategoryKey": 29104,
+                        "CategoryName": "Primary Specialty",
+                        "Tags": [
+                            {"Key": 281489, "Name": "Mammo Heavy", "LastModifiedDateUtc": None}
+                        ],
+                    },
+                    {
+                        "CategoryKey": 54840,
+                        "CategoryName": "Staff Type",
+                        "Tags": [{"Key": 889135, "Name": "Shareholder"}],
+                    },
+                ],
+            }
+        ]
+        client = _mock_client(data)
+        resource = ScheduleResource(client)
+        resp = resource.list(start_date="2024-01-01", includes="StaffTags")
+
+        entry = resp.items[0]
+        assert entry.staff_tags is not None
+        assert len(entry.staff_tags) == 2
+        assert isinstance(entry.staff_tags[0], TagCategory)
+        assert entry.staff_tags[0].category_name == "Primary Specialty"
+        assert entry.staff_tags[0].category_key == 29104
+        # Inner Tags are kept as plain dicts (per QGenda's payload shape)
+        assert entry.staff_tags[0].tags == [
+            {"Key": 281489, "Name": "Mammo Heavy", "LastModifiedDateUtc": None}
+        ]
+
+    def test_task_tags_and_location_tags_parsed(self):
+        data = [
+            {
+                "ScheduleKey": "sk1",
+                "TaskTags": [{"CategoryName": "TaskCat", "Tags": []}],
+                "LocationTags": [{"CategoryName": "LocCat", "Tags": []}],
+            }
+        ]
+        client = _mock_client(data)
+        resource = ScheduleResource(client)
+        resp = resource.list(start_date="2024-01-01", includes="TaskTags,LocationTags")
+
+        entry = resp.items[0]
+        assert entry.task_tags is not None
+        assert entry.task_tags[0].category_name == "TaskCat"
+        assert entry.location_tags is not None
+        assert entry.location_tags[0].category_name == "LocCat"
+
+    def test_missing_tag_fields_remain_none(self):
+        data = [{"ScheduleKey": "sk1"}]
+        client = _mock_client(data)
+        resource = ScheduleResource(client)
+        resp = resource.list(start_date="2024-01-01")
+
+        entry = resp.items[0]
+        assert entry.staff_tags is None
+        assert entry.task_tags is None
+        assert entry.location_tags is None
 
 
 class TestScheduleAuditLog:

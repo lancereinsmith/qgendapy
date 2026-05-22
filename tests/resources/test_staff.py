@@ -78,6 +78,33 @@ class TestStaffList:
         assert params["$filter"] == "IsActive eq true"
         assert params["$expand"] == "Tags"
 
+    def test_includes_kwarg_passed_through(self):
+        client = _mock_client([])
+        resource = StaffResource(client)
+        resource.list(includes="Tags,Skillset,Profiles")
+
+        call_args = client._transport.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert params["includes"] == "Tags,Skillset,Profiles"
+
+    def test_includes_not_set_when_absent(self):
+        client = _mock_client([])
+        resource = StaffResource(client)
+        resource.list()
+
+        call_args = client._transport.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert "includes" not in params
+
+    def test_get_includes_kwarg_passed_through(self):
+        client = _mock_client({"StaffKey": "s1"})
+        resource = StaffResource(client)
+        resource.get("s1", includes="Tags")
+
+        call_args = client._transport.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert params["includes"] == "Tags"
+
     def test_typed_fields_promoted(self):
         data = [
             {

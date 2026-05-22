@@ -157,10 +157,42 @@ odata = (
 )
 staff = client.staff.list(odata=odata)
 
-# Expand related data
+# Expand related data (OData $expand)
 odata = OData().expand("Tags")
 staff = client.staff.list(odata=odata)
+
+# Shortcut: pass expand= directly without building an OData
+staff = client.staff.list(expand="Tags")
+staff = client.staff.list(expand=["Tags", "Skillset"])
 ```
+
+#### `includes=` vs OData `$expand`
+
+QGenda exposes **two** related-entity selectors and they aren't
+interchangeable. OData `$expand` walks the DTO's nav properties; QGenda's
+own `includes=` parameter pulls richer nested categories that survive
+non-admin scope on schedule-style endpoints. When both are accepted, use
+`includes=` for tag/specialty data attached to schedule rows:
+
+```python
+# StaffTags inline — Primary Specialty, Sub Specialty, Staff Type, etc.
+resp = client.schedule.list(
+    start_date="2026-05-22",
+    end_date="2026-05-22",
+    includes="StaffTags",
+    odata=OData().filter("TaskName eq 'Call 1'"),
+)
+for entry in resp:
+    if entry.staff_tags:
+        for cat in entry.staff_tags:
+            print(cat.category_name, [t["Name"] for t in (cat.tags or [])])
+```
+
+Both `client.staff.list()` and `client.staff.get()` also accept `includes=`
+for symmetry; verify supported values per your QGenda deployment.
+
+Note: QGenda's API is **OData v4** (Microsoft.AspNet.OData). Use
+`contains(field, 'X')` rather than the v2-only `substringof('X', field)`.
 
 ### Write Operations
 

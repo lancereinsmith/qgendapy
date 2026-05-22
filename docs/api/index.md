@@ -23,6 +23,7 @@ Auto-generated documentation from source code.
 - [Profile](resources/profile.md)
 - [Pay](resources/pay.md)
 - [Staff Target](resources/staff_target.md)
+- [Staff Type](resources/staff_type.md)
 - [Credit](resources/credit.md)
 - [Notification](resources/notification.md)
 - [User](resources/user.md)
