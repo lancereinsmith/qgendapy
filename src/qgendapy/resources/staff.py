@@ -91,9 +91,11 @@ class StaffResource(BaseResource):
         ``GET /staffmember?$filter=StaffKey eq '<key>'&$expand=Tags`` and
         unwraps the ``Tags`` navigation collection.
 
-        Note: in some QGenda configurations the ``Tags`` navigation returns
-        ``null`` even for tagged staff. If you observe that, see the
-        company-level ``client.tag.list()`` endpoint.
+        **Returns an empty list under non-admin scope.** The ``Tags``
+        navigation property exists on QGenda's DTO but only populates for
+        admin-scoped service accounts. If you need tag/profile catalogs,
+        provision the API user with admin scope and call
+        ``client.tag.list()``.
         """
         params: dict[str, str] = {"companyKey": self._client.company_key}
         odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Tags")
@@ -122,6 +124,9 @@ class StaffResource(BaseResource):
         ``GET /staffmember?$filter=StaffKey eq '<key>'&$expand=Skillset`` —
         note the singular ``Skillset`` nav property — and unwraps the
         navigation collection.
+
+        **Returns an empty list under non-admin scope.** Like ``Tags``, the
+        ``Skillset`` navigation populates only for admin-scoped accounts.
         """
         params: dict[str, str] = {"companyKey": self._client.company_key}
         odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Skillset")
