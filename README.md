@@ -59,6 +59,46 @@ client = QGendaClient()
 
 Legacy `QGENDA_CONF_FILE` INI format is also supported.
 
+## Related-entity loading: `includes=` vs OData `$expand`
+
+QGenda offers **two** ways to ask for related entities, and they aren't
+interchangeable:
+
+- **OData `$expand`** (`client.staff.list(expand="Tags")` or
+  `odata=OData().expand("Tags")`) targets nav properties on the OData DTO.
+  On QGenda's production endpoints these often return `null` for non-admin
+  service accounts, even when the data exists.
+- **QGenda's own `includes=`** query parameter is a separate, non-OData
+  selector that returns rich nested categories. It works under non-admin
+  scope on schedule-style endpoints — this is the preferred way to read
+  tag/specialty data attached to schedule entries.
+
+```python
+# Pull every Call 1 shift on a given day, with Primary Specialty,
+# Sub Specialty, Staff Type, and Skill Set tags inline:
+resp = client.schedule.list(
+    start_date="2026-05-22",
+    end_date="2026-05-22",
+    includes="StaffTags",
+    odata=OData().filter("TaskName eq 'Call 1'"),
+)
+for entry in resp:
+    if entry.staff_tags:
+        for cat in entry.staff_tags:
+            print(cat.category_name, [t["Name"] for t in (cat.tags or [])])
+```
+
+Allowed values, observed in the wild (cross-check against your QGenda deployment):
+
+| Endpoint           | Valid `includes=` values                              |
+| ------------------ | ----------------------------------------------------- |
+| `/schedule`        | `StaffTags`, `TaskTags`, `LocationTags`               |
+| `/openshifts`      | `TaskTags`, `LocationTags`                            |
+| `/task`            | `Profiles`, `Tags`, `TaskShifts`                      |
+| `/staffmember`     | `Skillset`, `Tags`, `Profiles` (verify per deployment)|
+| `/dailycase`       | `Task`, `Supervisors`, `DirectProviders`              |
+| `/patientencounter`| `StandardFields`, `PatientInformation`                |
+
 ## Async
 
 ```python

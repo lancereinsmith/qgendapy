@@ -23,7 +23,13 @@ from qgendapy.models.facility import Facility
 from qgendapy.models.organization import Organization
 from qgendapy.models.pay import PayCode, PayPeriodAmount, PayRate
 from qgendapy.models.request import ApprovedRequest, Request, RequestLimit
-from qgendapy.models.schedule import AuditLogEntry, OpenShift, Rotation, ScheduleEntry
+from qgendapy.models.schedule import (
+    AuditLogEntry,
+    OpenShift,
+    Rotation,
+    ScheduleEntry,
+    TagCategory,
+)
 from qgendapy.models.staff import (
     PayModifier,
     StaffMember,
@@ -73,6 +79,7 @@ __all__ = [
     "StaffTag",
     "StaffType",
     "Tag",
+    "TagCategory",
     "Task",
     "TaskShift",
     "TimeEvent",
