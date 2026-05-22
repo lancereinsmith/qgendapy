@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
 from qgendapy.exceptions import QGendaError
 from qgendapy.models.schedule import AuditLogEntry, OpenShift, Rotation, ScheduleEntry
+from qgendapy.odata import merge_expand
 from qgendapy.resources._base import AsyncBaseResource, BaseResource
 
 if TYPE_CHECKING:
@@ -38,10 +40,15 @@ class ScheduleResource(BaseResource):
         end_date: str | None = None,
         includes: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[ScheduleEntry]:
         if end_date and _date_chunks(start_date, end_date) != [(start_date, end_date)]:
             return self._chunked_list(
-                start_date=start_date, end_date=end_date, includes=includes, odata=odata
+                start_date=start_date,
+                end_date=end_date,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
         params: dict[str, str] = {
             "startDate": start_date,
@@ -51,7 +58,12 @@ class ScheduleResource(BaseResource):
             params["endDate"] = end_date
         if includes:
             params["includes"] = includes
-        return self._get("/schedule", params=params, model=ScheduleEntry, odata=odata)
+        return self._get(
+            "/schedule",
+            params=params,
+            model=ScheduleEntry,
+            odata=merge_expand(expand, odata),
+        )
 
     def _chunked_list(
         self,
@@ -60,12 +72,17 @@ class ScheduleResource(BaseResource):
         end_date: str,
         includes: str | None,
         odata: OData | None,
+        expand: str | Sequence[str] | None,
     ) -> QGendaResponse[ScheduleEntry]:
         chunks = _date_chunks(start_date, end_date)
         combined: QGendaResponse[ScheduleEntry] | None = None
         for chunk_start, chunk_end in chunks:
             resp = self.list(
-                start_date=chunk_start, end_date=chunk_end, includes=includes, odata=odata
+                start_date=chunk_start,
+                end_date=chunk_end,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
             if combined is None:
                 combined = resp
@@ -84,6 +101,7 @@ class ScheduleResource(BaseResource):
         schedule_end_date: str | None = None,
         since_modified_timestamp: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[AuditLogEntry]:
         params: dict[str, str] = {"companyKey": self._client.company_key}
         if schedule_start_date:
@@ -92,7 +110,12 @@ class ScheduleResource(BaseResource):
             params["scheduleEndDate"] = schedule_end_date
         if since_modified_timestamp:
             params["sinceModifiedTimestamp"] = since_modified_timestamp
-        return self._get("/schedule/auditLog", params=params, model=AuditLogEntry, odata=odata)
+        return self._get(
+            "/schedule/auditLog",
+            params=params,
+            model=AuditLogEntry,
+            odata=merge_expand(expand, odata),
+        )
 
     def open_shifts(
         self,
@@ -101,10 +124,15 @@ class ScheduleResource(BaseResource):
         end_date: str | None = None,
         includes: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[OpenShift]:
         if end_date and _date_chunks(start_date, end_date) != [(start_date, end_date)]:
             return self._chunked_open_shifts(
-                start_date=start_date, end_date=end_date, includes=includes, odata=odata
+                start_date=start_date,
+                end_date=end_date,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
         params: dict[str, str] = {
             "startDate": start_date,
@@ -114,7 +142,12 @@ class ScheduleResource(BaseResource):
             params["endDate"] = end_date
         if includes:
             params["includes"] = includes
-        return self._get("/schedule/openshifts", params=params, model=OpenShift, odata=odata)
+        return self._get(
+            "/schedule/openshifts",
+            params=params,
+            model=OpenShift,
+            odata=merge_expand(expand, odata),
+        )
 
     def _chunked_open_shifts(
         self,
@@ -123,12 +156,17 @@ class ScheduleResource(BaseResource):
         end_date: str,
         includes: str | None,
         odata: OData | None,
+        expand: str | Sequence[str] | None,
     ) -> QGendaResponse[OpenShift]:
         chunks = _date_chunks(start_date, end_date)
         combined: QGendaResponse[OpenShift] | None = None
         for chunk_start, chunk_end in chunks:
             resp = self.open_shifts(
-                start_date=chunk_start, end_date=chunk_end, includes=includes, odata=odata
+                start_date=chunk_start,
+                end_date=chunk_end,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
             if combined is None:
                 combined = resp
@@ -146,13 +184,19 @@ class ScheduleResource(BaseResource):
         range_start_date: str | None = None,
         range_end_date: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[Rotation]:
         params: dict[str, str] = {"companyKey": self._client.company_key}
         if range_start_date:
             params["rangeStartDate"] = range_start_date
         if range_end_date:
             params["rangeEndDate"] = range_end_date
-        return self._get("/schedule/rotations", params=params, model=Rotation, odata=odata)
+        return self._get(
+            "/schedule/rotations",
+            params=params,
+            model=Rotation,
+            odata=merge_expand(expand, odata),
+        )
 
 
 class AsyncScheduleResource(AsyncBaseResource):
@@ -165,10 +209,15 @@ class AsyncScheduleResource(AsyncBaseResource):
         end_date: str | None = None,
         includes: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[ScheduleEntry]:
         if end_date and _date_chunks(start_date, end_date) != [(start_date, end_date)]:
             return await self._chunked_list(
-                start_date=start_date, end_date=end_date, includes=includes, odata=odata
+                start_date=start_date,
+                end_date=end_date,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
         params: dict[str, str] = {
             "startDate": start_date,
@@ -178,7 +227,12 @@ class AsyncScheduleResource(AsyncBaseResource):
             params["endDate"] = end_date
         if includes:
             params["includes"] = includes
-        return await self._get("/schedule", params=params, model=ScheduleEntry, odata=odata)
+        return await self._get(
+            "/schedule",
+            params=params,
+            model=ScheduleEntry,
+            odata=merge_expand(expand, odata),
+        )
 
     async def _chunked_list(
         self,
@@ -187,12 +241,17 @@ class AsyncScheduleResource(AsyncBaseResource):
         end_date: str,
         includes: str | None,
         odata: OData | None,
+        expand: str | Sequence[str] | None,
     ) -> QGendaResponse[ScheduleEntry]:
         chunks = _date_chunks(start_date, end_date)
         combined: QGendaResponse[ScheduleEntry] | None = None
         for chunk_start, chunk_end in chunks:
             resp = await self.list(
-                start_date=chunk_start, end_date=chunk_end, includes=includes, odata=odata
+                start_date=chunk_start,
+                end_date=chunk_end,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
             if combined is None:
                 combined = resp
@@ -211,6 +270,7 @@ class AsyncScheduleResource(AsyncBaseResource):
         schedule_end_date: str | None = None,
         since_modified_timestamp: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[AuditLogEntry]:
         params: dict[str, str] = {"companyKey": self._client.company_key}
         if schedule_start_date:
@@ -220,7 +280,10 @@ class AsyncScheduleResource(AsyncBaseResource):
         if since_modified_timestamp:
             params["sinceModifiedTimestamp"] = since_modified_timestamp
         return await self._get(
-            "/schedule/auditLog", params=params, model=AuditLogEntry, odata=odata
+            "/schedule/auditLog",
+            params=params,
+            model=AuditLogEntry,
+            odata=merge_expand(expand, odata),
         )
 
     async def open_shifts(
@@ -230,10 +293,15 @@ class AsyncScheduleResource(AsyncBaseResource):
         end_date: str | None = None,
         includes: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[OpenShift]:
         if end_date and _date_chunks(start_date, end_date) != [(start_date, end_date)]:
             return await self._chunked_open_shifts(
-                start_date=start_date, end_date=end_date, includes=includes, odata=odata
+                start_date=start_date,
+                end_date=end_date,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
         params: dict[str, str] = {
             "startDate": start_date,
@@ -243,7 +311,12 @@ class AsyncScheduleResource(AsyncBaseResource):
             params["endDate"] = end_date
         if includes:
             params["includes"] = includes
-        return await self._get("/schedule/openshifts", params=params, model=OpenShift, odata=odata)
+        return await self._get(
+            "/schedule/openshifts",
+            params=params,
+            model=OpenShift,
+            odata=merge_expand(expand, odata),
+        )
 
     async def _chunked_open_shifts(
         self,
@@ -252,12 +325,17 @@ class AsyncScheduleResource(AsyncBaseResource):
         end_date: str,
         includes: str | None,
         odata: OData | None,
+        expand: str | Sequence[str] | None,
     ) -> QGendaResponse[OpenShift]:
         chunks = _date_chunks(start_date, end_date)
         combined: QGendaResponse[OpenShift] | None = None
         for chunk_start, chunk_end in chunks:
             resp = await self.open_shifts(
-                start_date=chunk_start, end_date=chunk_end, includes=includes, odata=odata
+                start_date=chunk_start,
+                end_date=chunk_end,
+                includes=includes,
+                odata=odata,
+                expand=expand,
             )
             if combined is None:
                 combined = resp
@@ -275,10 +353,16 @@ class AsyncScheduleResource(AsyncBaseResource):
         range_start_date: str | None = None,
         range_end_date: str | None = None,
         odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[Rotation]:
         params: dict[str, str] = {"companyKey": self._client.company_key}
         if range_start_date:
             params["rangeStartDate"] = range_start_date
         if range_end_date:
             params["rangeEndDate"] = range_end_date
-        return await self._get("/schedule/rotations", params=params, model=Rotation, odata=odata)
+        return await self._get(
+            "/schedule/rotations",
+            params=params,
+            model=Rotation,
+            odata=merge_expand(expand, odata),
+        )

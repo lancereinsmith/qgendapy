@@ -156,8 +156,9 @@ class TestAsyncStaffUpdate:
 
 class TestAsyncStaffTags:
     @pytest.mark.asyncio
-    async def test_returns_staff_tags(self):
-        data = [{"TagKey": "t1", "TagName": "Senior"}]
+    async def test_returns_staff_tags_via_expand(self):
+        # tags() rewrites to GET /staffmember?$filter=...&$expand=Tags
+        data = [{"StaffKey": "s1", "Tags": [{"TagKey": "t1", "TagName": "Senior"}]}]
         client = _mock_async_client(data)
         resource = AsyncStaffResource(client)
         resp = await resource.tags("s1")

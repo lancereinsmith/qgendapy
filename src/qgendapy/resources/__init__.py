@@ -43,6 +43,7 @@ from qgendapy.resources.staff_target import (
     AsyncStaffTargetResource,
     StaffTargetResource,
 )
+from qgendapy.resources.staff_type import AsyncStaffTypeResource, StaffTypeResource
 from qgendapy.resources.support import AsyncSupportResource, SupportResource
 from qgendapy.resources.tag import AsyncTagResource, TagResource
 from qgendapy.resources.task import AsyncTaskResource, TaskResource
@@ -69,6 +70,7 @@ __all__ = [
     "AsyncScheduleResource",
     "AsyncStaffResource",
     "AsyncStaffTargetResource",
+    "AsyncStaffTypeResource",
     "AsyncSupportResource",
     "AsyncTagResource",
     "AsyncTaskResource",
@@ -93,6 +95,7 @@ __all__ = [
     "ScheduleResource",
     "StaffResource",
     "StaffTargetResource",
+    "StaffTypeResource",
     "SupportResource",
     "TagResource",
     "TaskResource",

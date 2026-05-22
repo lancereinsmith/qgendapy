@@ -49,6 +49,65 @@ class TestStaffList:
         params = call_args.kwargs.get("params") or call_args[1].get("params", {})
         assert "$filter" in params
 
+    def test_expand_kwarg_string(self):
+        client = _mock_client([])
+        resource = StaffResource(client)
+        resource.list(expand="Tags")
+
+        call_args = client._transport.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert params["$expand"] == "Tags"
+
+    def test_expand_kwarg_list(self):
+        client = _mock_client([])
+        resource = StaffResource(client)
+        resource.list(expand=["Tags", "Skillset"])
+
+        call_args = client._transport.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert params["$expand"] == "Tags,Skillset"
+
+    def test_expand_preserves_other_odata_params(self):
+        client = _mock_client([])
+        resource = StaffResource(client)
+        odata = OData().filter("IsActive eq true")
+        resource.list(odata=odata, expand="Tags")
+
+        call_args = client._transport.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert params["$filter"] == "IsActive eq true"
+        assert params["$expand"] == "Tags"
+
+    def test_typed_fields_promoted(self):
+        data = [
+            {
+                "StaffKey": "s1",
+                "PrimaryProfile": "Neuro Heavy",
+                "PrimaryProfileKey": "pk1",
+                "StaffTypeKey": "stk1",
+                "BgColor": "99cccc",
+                "TextColor": "000000",
+                "Fte": 0.8,
+                "RegHours": 32,
+                "Tags": [{"TagKey": "t1", "TagName": "Senior"}],
+            }
+        ]
+        client = _mock_client(data)
+        resource = StaffResource(client)
+        resp = resource.list()
+
+        member = resp.items[0]
+        assert member.primary_profile == "Neuro Heavy"
+        assert member.primary_profile_key == "pk1"
+        assert member.staff_type_key == "stk1"
+        assert member.bg_color == "99cccc"
+        assert member.text_color == "000000"
+        assert member.fte == 0.8
+        # Tags are auto-parsed to StaffTag instances
+        assert isinstance(member.tags, list)
+        assert isinstance(member.tags[0], StaffTag)
+        assert member.tags[0].tag_name == "Senior"
+
 
 class TestStaffGet:
     def test_gets_single_staff(self):
@@ -92,14 +151,36 @@ class TestStaffUpdate:
 
 
 class TestStaffTags:
-    def test_returns_tags(self):
-        data = [{"TagKey": "t1", "TagName": "Radiology"}]
+    def test_returns_tags_via_expand(self):
+        # tags() rewrites to GET /staffmember?$filter=StaffKey eq '...'&$expand=Tags
+        data = [{"StaffKey": "s1", "Tags": [{"TagKey": "t1", "TagName": "Radiology"}]}]
         client = _mock_client(data)
         resource = StaffResource(client)
         resp = resource.tags("s1")
 
         assert len(resp.items) == 1
         assert isinstance(resp.items[0], StaffTag)
+        assert resp.items[0].tag_name == "Radiology"
+
+    def test_tags_hits_list_route_with_filter_and_expand(self):
+        client = _mock_client([])
+        resource = StaffResource(client)
+        resource.tags("s1")
+
+        call_args = client._transport.request.call_args
+        assert call_args[0][1] == "/staffmember"
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        assert params["$filter"] == "StaffKey eq 's1'"
+        assert params["$expand"] == "Tags"
+
+    def test_tags_handles_null_navigation(self):
+        # QGenda often returns Tags as null even on tagged staff
+        data = [{"StaffKey": "s1", "Tags": None}]
+        client = _mock_client(data)
+        resource = StaffResource(client)
+        resp = resource.tags("s1")
+
+        assert resp.items == []
 
     def test_add_tag(self):
         client = _mock_client({"TagKey": "t1"})
@@ -112,8 +193,9 @@ class TestStaffTags:
 
 
 class TestStaffSkillsets:
-    def test_returns_skillsets(self):
-        data = [{"TaskKey": "tk1", "TaskName": "CT", "Level": 3}]
+    def test_returns_skillsets_via_expand(self):
+        # skillsets() rewrites to GET /staffmember?$filter=...&$expand=Skillset
+        data = [{"StaffKey": "s1", "Skillset": [{"TaskKey": "tk1", "TaskName": "CT", "Level": 3}]}]
         client = _mock_client(data)
         resource = StaffResource(client)
         resp = resource.skillsets("s1")
@@ -121,6 +203,17 @@ class TestStaffSkillsets:
         assert len(resp.items) == 1
         assert isinstance(resp.items[0], StaffSkillset)
         assert resp.items[0].level == 3
+
+    def test_skillsets_hits_list_route_with_singular_expand(self):
+        client = _mock_client([])
+        resource = StaffResource(client)
+        resource.skillsets("s1")
+
+        call_args = client._transport.request.call_args
+        assert call_args[0][1] == "/staffmember"
+        params = call_args.kwargs.get("params") or call_args[1].get("params", {})
+        # Must use the singular nav name — "Skillsets" returns 400 from the real API
+        assert params["$expand"] == "Skillset"
 
     def test_delete_skillset(self):
         client = _mock_client("")

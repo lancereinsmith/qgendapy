@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from qgendapy.models.staff import (
@@ -9,25 +10,72 @@ from qgendapy.models.staff import (
     StaffSkillset,
     StaffTag,
 )
+from qgendapy.odata import OData, merge_expand
 from qgendapy.resources._base import AsyncBaseResource, BaseResource
+from qgendapy.response import QGendaResponse
 
 if TYPE_CHECKING:
-    from qgendapy.odata import OData
-    from qgendapy.response import QGendaResponse
+    pass
+
+
+def _extract_nested(
+    list_data: list | dict,
+    nav_property: str,
+) -> list[dict]:
+    """Pull a navigation-property collection out of a /staffmember list response."""
+    items: list[dict] = []
+    members: list = list_data if isinstance(list_data, list) else [list_data]
+    for member in members:
+        if not isinstance(member, dict):
+            continue
+        nested = member.get(nav_property)
+        if isinstance(nested, list):
+            items.extend(d for d in nested if isinstance(d, dict))
+        elif isinstance(nested, dict):
+            items.append(nested)
+    return items
 
 
 class StaffResource(BaseResource):
     """Synchronous staff member endpoints."""
 
-    def list(self, *, odata: OData | None = None) -> QGendaResponse[StaffMember]:
+    def list(
+        self,
+        *,
+        odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
+    ) -> QGendaResponse[StaffMember]:
+        """List staff members.
+
+        ``expand`` is a convenience shortcut for ``OData().expand(...)`` —
+        pass a string (``expand="Tags"``) or a list of nav properties to
+        request expanded entities. Valid OData v4 nav names on
+        ``StaffMemberDetailDto`` include ``Tags``, ``Skillset`` (singular),
+        and ``Profiles``.
+        """
         params: dict[str, str] = {"companyKey": self._client.company_key}
-        return self._get("/staffmember", params=params, model=StaffMember, odata=odata)
+        return self._get(
+            "/staffmember",
+            params=params,
+            model=StaffMember,
+            odata=merge_expand(expand, odata),
+        )
 
     def create(self, *, data: dict) -> QGendaResponse[StaffMember]:
         return self._post("/staffmember", json=data, model=StaffMember)
 
-    def get(self, staff_key: str, *, odata: OData | None = None) -> QGendaResponse[StaffMember]:
-        return self._get(f"/staffmember/{staff_key}", model=StaffMember, odata=odata)
+    def get(
+        self,
+        staff_key: str,
+        *,
+        odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
+    ) -> QGendaResponse[StaffMember]:
+        return self._get(
+            f"/staffmember/{staff_key}",
+            model=StaffMember,
+            odata=merge_expand(expand, odata),
+        )
 
     def update(self, staff_key: str, *, data: dict) -> QGendaResponse[StaffMember]:
         return self._put(f"/staffmember/{staff_key}", json=data, model=StaffMember)
@@ -36,7 +84,29 @@ class StaffResource(BaseResource):
         return self._get(f"/staffmember/{staff_key}/location")
 
     def tags(self, staff_key: str) -> QGendaResponse[StaffTag]:
-        return self._get(f"/staffmember/{staff_key}/tag", model=StaffTag)
+        """Return tags for a single staff member.
+
+        QGenda's API does not expose ``GET /staffmember/{key}/tag`` (it
+        returns 405). This method instead issues
+        ``GET /staffmember?$filter=StaffKey eq '<key>'&$expand=Tags`` and
+        unwraps the ``Tags`` navigation collection.
+
+        **Returns an empty list under non-admin scope.** The ``Tags``
+        navigation property exists on QGenda's DTO but only populates for
+        admin-scoped service accounts. If you need tag/profile catalogs,
+        provision the API user with admin scope and call
+        ``client.tag.list()``.
+        """
+        params: dict[str, str] = {"companyKey": self._client.company_key}
+        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Tags")
+        raw = self._get("/staffmember", params=params, odata=odata)
+        tag_dicts = _extract_nested(raw.data, "Tags")
+        return QGendaResponse(
+            data=tag_dicts,
+            status_code=raw.status_code,
+            headers=raw.headers,
+            items=[StaffTag.from_dict(d) for d in tag_dicts],
+        )
 
     def add_tag(self, staff_key: str, *, data: dict) -> QGendaResponse[StaffTag]:
         return self._post(f"/staffmember/{staff_key}/tag", json=data, model=StaffTag)
@@ -47,7 +117,27 @@ class StaffResource(BaseResource):
         return self._put(f"/staffmember/{staff_key}/location/{location_key}/tag", json=data)
 
     def skillsets(self, staff_key: str) -> QGendaResponse[StaffSkillset]:
-        return self._get(f"/staffmember/{staff_key}/skillset", model=StaffSkillset)
+        """Return skillsets for a single staff member.
+
+        QGenda's API does not expose ``GET /staffmember/{key}/skillset`` (it
+        returns 405). This method instead issues
+        ``GET /staffmember?$filter=StaffKey eq '<key>'&$expand=Skillset`` —
+        note the singular ``Skillset`` nav property — and unwraps the
+        navigation collection.
+
+        **Returns an empty list under non-admin scope.** Like ``Tags``, the
+        ``Skillset`` navigation populates only for admin-scoped accounts.
+        """
+        params: dict[str, str] = {"companyKey": self._client.company_key}
+        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Skillset")
+        raw = self._get("/staffmember", params=params, odata=odata)
+        skillset_dicts = _extract_nested(raw.data, "Skillset")
+        return QGendaResponse(
+            data=skillset_dicts,
+            status_code=raw.status_code,
+            headers=raw.headers,
+            items=[StaffSkillset.from_dict(d) for d in skillset_dicts],
+        )
 
     def update_skillset(
         self, staff_key: str, task_key: str, *, data: dict
@@ -104,17 +194,35 @@ class StaffResource(BaseResource):
 class AsyncStaffResource(AsyncBaseResource):
     """Asynchronous staff member endpoints."""
 
-    async def list(self, *, odata: OData | None = None) -> QGendaResponse[StaffMember]:
+    async def list(
+        self,
+        *,
+        odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
+    ) -> QGendaResponse[StaffMember]:
         params: dict[str, str] = {"companyKey": self._client.company_key}
-        return await self._get("/staffmember", params=params, model=StaffMember, odata=odata)
+        return await self._get(
+            "/staffmember",
+            params=params,
+            model=StaffMember,
+            odata=merge_expand(expand, odata),
+        )
 
     async def create(self, *, data: dict) -> QGendaResponse[StaffMember]:
         return await self._post("/staffmember", json=data, model=StaffMember)
 
     async def get(
-        self, staff_key: str, *, odata: OData | None = None
+        self,
+        staff_key: str,
+        *,
+        odata: OData | None = None,
+        expand: str | Sequence[str] | None = None,
     ) -> QGendaResponse[StaffMember]:
-        return await self._get(f"/staffmember/{staff_key}", model=StaffMember, odata=odata)
+        return await self._get(
+            f"/staffmember/{staff_key}",
+            model=StaffMember,
+            odata=merge_expand(expand, odata),
+        )
 
     async def update(self, staff_key: str, *, data: dict) -> QGendaResponse[StaffMember]:
         return await self._put(f"/staffmember/{staff_key}", json=data, model=StaffMember)
@@ -123,7 +231,17 @@ class AsyncStaffResource(AsyncBaseResource):
         return await self._get(f"/staffmember/{staff_key}/location")
 
     async def tags(self, staff_key: str) -> QGendaResponse[StaffTag]:
-        return await self._get(f"/staffmember/{staff_key}/tag", model=StaffTag)
+        """Async version of :meth:`StaffResource.tags`."""
+        params: dict[str, str] = {"companyKey": self._client.company_key}
+        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Tags")
+        raw = await self._get("/staffmember", params=params, odata=odata)
+        tag_dicts = _extract_nested(raw.data, "Tags")
+        return QGendaResponse(
+            data=tag_dicts,
+            status_code=raw.status_code,
+            headers=raw.headers,
+            items=[StaffTag.from_dict(d) for d in tag_dicts],
+        )
 
     async def add_tag(self, staff_key: str, *, data: dict) -> QGendaResponse[StaffTag]:
         return await self._post(f"/staffmember/{staff_key}/tag", json=data, model=StaffTag)
@@ -134,7 +252,17 @@ class AsyncStaffResource(AsyncBaseResource):
         return await self._put(f"/staffmember/{staff_key}/location/{location_key}/tag", json=data)
 
     async def skillsets(self, staff_key: str) -> QGendaResponse[StaffSkillset]:
-        return await self._get(f"/staffmember/{staff_key}/skillset", model=StaffSkillset)
+        """Async version of :meth:`StaffResource.skillsets`."""
+        params: dict[str, str] = {"companyKey": self._client.company_key}
+        odata = OData().filter(f"StaffKey eq '{staff_key}'").expand("Skillset")
+        raw = await self._get("/staffmember", params=params, odata=odata)
+        skillset_dicts = _extract_nested(raw.data, "Skillset")
+        return QGendaResponse(
+            data=skillset_dicts,
+            status_code=raw.status_code,
+            headers=raw.headers,
+            items=[StaffSkillset.from_dict(d) for d in skillset_dicts],
+        )
 
     async def update_skillset(
         self, staff_key: str, task_key: str, *, data: dict

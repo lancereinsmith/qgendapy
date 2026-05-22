@@ -48,6 +48,7 @@ from qgendapy.resources.staff_target import (
     AsyncStaffTargetResource,
     StaffTargetResource,
 )
+from qgendapy.resources.staff_type import AsyncStaffTypeResource, StaffTypeResource
 from qgendapy.resources.support import AsyncSupportResource, SupportResource
 from qgendapy.resources.tag import AsyncTagResource, TagResource
 from qgendapy.resources.task import AsyncTaskResource, TaskResource
@@ -92,6 +93,7 @@ class QGendaClient:
         self.pay_rate = PayRateResource(self)
         self.pay_pool = PayPoolResource(self)
         self.staff_target = StaffTargetResource(self)
+        self.staff_type = StaffTypeResource(self)
         self.credit = CreditAllocationResource(self)
         self.notification = NotificationResource(self)
         self.user = UserResource(self)
@@ -152,6 +154,7 @@ class AsyncQGendaClient:
         self.pay_rate = AsyncPayRateResource(self)
         self.pay_pool = AsyncPayPoolResource(self)
         self.staff_target = AsyncStaffTargetResource(self)
+        self.staff_type = AsyncStaffTypeResource(self)
         self.credit = AsyncCreditAllocationResource(self)
         self.notification = AsyncNotificationResource(self)
         self.user = AsyncUserResource(self)
