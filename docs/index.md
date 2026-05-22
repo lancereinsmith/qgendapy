@@ -6,7 +6,7 @@ Thank you to JP Jorissen for laying the foundation for this library.
 
 ## Features
 
-- **Full API coverage** -- 159 methods across 23 resource groups covering the entire QGenda REST API
+- **Full API coverage** -- 160+ methods across 24 resource groups covering the entire QGenda REST API
 - **Sync + Async** -- `QGendaClient` (sync) and `AsyncQGendaClient` (async) with identical APIs
 - **Resource-namespaced** -- `client.schedule.list()`, `client.staff.get(key)`, `client.credentialing.workflows()`
 - **Typed models** -- Dataclass response models with automatic PascalCase-to-snake_case mapping
@@ -72,6 +72,7 @@ uv add qgendapy
 | Pay Rate | `client.pay_rate` | list, create, update, delete |
 | Pay Pool | `client.pay_pool` | period_amounts |
 | Staff Target | `client.staff_target` | list, create, update, delete, locations, staff, task_shifts, profiles |
+| Staff Type | `client.staff_type` | list |
 | Credit | `client.credit` | quotas, update_quota |
 | Notification | `client.notification` | list, get, create, update, delete, contacts |
 | User | `client.user` | list, get, non_scheduled, non_scheduled_permissions |

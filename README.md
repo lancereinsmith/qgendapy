@@ -8,7 +8,7 @@ Thank you to JP Jorissen for laying the foundation for this library.
 
 ## Features
 
-- **Full API coverage** -- 159 methods across 23 resource groups
+- **Full API coverage** -- 160+ methods across 24 resource groups
 - **Sync + Async** -- `QGendaClient` and `AsyncQGendaClient` with identical APIs
 - **Resource-namespaced** -- `client.schedule.list()`, `client.staff.get(key)`, `client.credentialing.workflows()`
 - **Typed models** -- Dataclass responses with automatic PascalCase-to-snake_case mapping
@@ -130,6 +130,7 @@ See [docs/migration.md](docs/migration.md) for the full migration guide.
 |----------|-----------|---------|
 | Schedule | `client.schedule` | list, audit_log, open_shifts, rotations |
 | Staff | `client.staff` | list, get, create, update, tags, skillsets, profiles, pay_modifiers, ... |
+| Staff Type | `client.staff_type` | list |
 | Task | `client.task` | list, create, update, locations, tags, shifts |
 | Facility | `client.facility` | list, get, create, update, delete, staff, tags, tasks, ... |
 | Time Event | `client.time_event` | list, create, update, delete |

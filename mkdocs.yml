@@ -1,7 +1,7 @@
 site_name: qgendapy
 site_description: Modern Python client for the QGenda REST API
 site_author: Lance Reinsmith
-repo_url: https://github.com/lreinsmith/qgendapy
+repo_url: https://github.com/lancereinsmith/qgendapy
 copyright: Copyright &copy; 2026 Lance Reinsmith
 
 theme:
@@ -65,6 +65,7 @@ nav:
           - Profile: api/resources/profile.md
           - Pay: api/resources/pay.md
           - Staff Target: api/resources/staff_target.md
+          - Staff Type: api/resources/staff_type.md
           - Credit: api/resources/credit.md
           - Notification: api/resources/notification.md
           - User: api/resources/user.md
