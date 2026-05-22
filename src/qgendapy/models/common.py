@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, fields
+from typing import Self
 
 
 def _pascal_to_snake(name: str) -> str:
@@ -35,7 +36,7 @@ class BaseModel:
     _extra: dict = field(default_factory=dict, repr=False)
 
     @classmethod
-    def from_dict(cls, data: dict) -> BaseModel:
+    def from_dict(cls, data: dict) -> Self:
         field_map = _build_field_map(cls)
         known_fields = {f.name for f in fields(cls)}
         kwargs: dict = {}

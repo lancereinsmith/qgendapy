@@ -30,6 +30,7 @@ from qgendapy.models.staff import (
     StaffProfile,
     StaffSkillset,
     StaffTag,
+    StaffType,
 )
 from qgendapy.models.task import Task, TaskShift
 from qgendapy.models.time_event import TimeEvent
@@ -70,6 +71,7 @@ __all__ = [
     "StaffProfile",
     "StaffSkillset",
     "StaffTag",
+    "StaffType",
     "Tag",
     "Task",
     "TaskShift",
