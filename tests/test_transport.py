@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from qgendapy._auth import AsyncAuth
+from qgendapy._config import DEFAULT_TIMEOUT
 from qgendapy._transport import AsyncTransport, Transport
 
 
@@ -63,6 +64,33 @@ class TestTransport:
             mock_close.assert_called_once()
 
 
+class TestTransportTimeout:
+    """httpx defaults to 5s on every phase, which real QGenda responses exceed."""
+
+    def test_default_timeout_is_not_the_httpx_default(self, mock_auth):
+        transport = Transport(auth=mock_auth, base_url="https://api.test.com")
+
+        assert transport._client.timeout == httpx.Timeout(DEFAULT_TIMEOUT)
+        assert DEFAULT_TIMEOUT > 5.0
+
+    def test_explicit_timeout_reaches_the_httpx_client(self, mock_auth):
+        transport = Transport(auth=mock_auth, base_url="https://api.test.com", timeout=90.0)
+
+        assert transport._client.timeout == httpx.Timeout(90.0)
+
+    def test_per_phase_timeout_passes_through(self, mock_auth):
+        timeout = httpx.Timeout(5.0, read=120.0)
+
+        transport = Transport(auth=mock_auth, base_url="https://api.test.com", timeout=timeout)
+
+        assert transport._client.timeout == timeout
+
+    def test_none_disables_timeouts(self, mock_auth):
+        transport = Transport(auth=mock_auth, base_url="https://api.test.com", timeout=None)
+
+        assert transport._client.timeout == httpx.Timeout(None)
+
+
 class TestAsyncTransport:
     @pytest.mark.asyncio
     async def test_request_adds_auth_header(self):
@@ -103,3 +131,19 @@ class TestAsyncTransport:
             transport = AsyncTransport(auth=mock_auth, base_url="https://api.test.com")
             await transport.close()
             mock_aclose.assert_called_once()
+
+
+class TestAsyncTransportTimeout:
+    def test_default_timeout_is_not_the_httpx_default(self):
+        mock_auth = MagicMock(spec=AsyncAuth)
+
+        transport = AsyncTransport(auth=mock_auth, base_url="https://api.test.com")
+
+        assert transport._client.timeout == httpx.Timeout(DEFAULT_TIMEOUT)
+
+    def test_explicit_timeout_reaches_the_httpx_client(self):
+        mock_auth = MagicMock(spec=AsyncAuth)
+
+        transport = AsyncTransport(auth=mock_auth, base_url="https://api.test.com", timeout=90.0)
+
+        assert transport._client.timeout == httpx.Timeout(90.0)

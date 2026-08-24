@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 import httpx
 
+from qgendapy._config import DEFAULT_TIMEOUT
+
 if TYPE_CHECKING:
     from qgendapy._auth import AsyncAuth, Auth
 
@@ -11,10 +13,15 @@ if TYPE_CHECKING:
 class Transport:
     """Synchronous HTTP transport wrapping httpx.Client."""
 
-    def __init__(self, auth: Auth, base_url: str) -> None:
+    def __init__(
+        self,
+        auth: Auth,
+        base_url: str,
+        timeout: float | httpx.Timeout | None = DEFAULT_TIMEOUT,
+    ) -> None:
         self._auth = auth
         self._base_url = base_url
-        self._client = httpx.Client(base_url=base_url)
+        self._client = httpx.Client(base_url=base_url, timeout=timeout)
 
     def request(
         self,
@@ -45,10 +52,15 @@ class Transport:
 class AsyncTransport:
     """Asynchronous HTTP transport wrapping httpx.AsyncClient."""
 
-    def __init__(self, auth: AsyncAuth, base_url: str) -> None:
+    def __init__(
+        self,
+        auth: AsyncAuth,
+        base_url: str,
+        timeout: float | httpx.Timeout | None = DEFAULT_TIMEOUT,
+    ) -> None:
         self._auth = auth
         self._base_url = base_url
-        self._client = httpx.AsyncClient(base_url=base_url)
+        self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout)
 
     async def request(
         self,
