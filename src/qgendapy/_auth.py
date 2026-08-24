@@ -6,6 +6,7 @@ import time
 
 import httpx
 
+from qgendapy._config import DEFAULT_TIMEOUT
 from qgendapy.exceptions import AuthenticationError
 
 
@@ -17,10 +18,17 @@ class Auth:
 
     _BUFFER_SECONDS = 60
 
-    def __init__(self, email: str, password: str, base_url: str) -> None:
+    def __init__(
+        self,
+        email: str,
+        password: str,
+        base_url: str,
+        timeout: float | httpx.Timeout | None = DEFAULT_TIMEOUT,
+    ) -> None:
         self._email = email
         self._password = password
         self._login_url = f"{base_url}/login"
+        self._timeout = timeout
         self._access_token: str | None = None
         self._expires_at: float = 0.0
         self._lock = threading.Lock()
@@ -36,7 +44,7 @@ class Auth:
 
     def _refresh(self) -> None:
         """POST to the login endpoint and store the new token."""
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self._timeout) as client:
             resp = client.post(
                 self._login_url,
                 data={"email": self._email, "password": self._password},
@@ -58,10 +66,17 @@ class AsyncAuth:
 
     _BUFFER_SECONDS = 60
 
-    def __init__(self, email: str, password: str, base_url: str) -> None:
+    def __init__(
+        self,
+        email: str,
+        password: str,
+        base_url: str,
+        timeout: float | httpx.Timeout | None = DEFAULT_TIMEOUT,
+    ) -> None:
         self._email = email
         self._password = password
         self._login_url = f"{base_url}/login"
+        self._timeout = timeout
         self._access_token: str | None = None
         self._expires_at: float = 0.0
         self._lock = asyncio.Lock()
@@ -76,7 +91,7 @@ class AsyncAuth:
 
     async def _refresh(self) -> None:
         """POST to the login endpoint and store the new token."""
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(
                 self._login_url,
                 data={"email": self._email, "password": self._password},

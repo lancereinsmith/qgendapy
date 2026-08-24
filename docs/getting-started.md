@@ -66,6 +66,24 @@ Note: The INI format uses `username` (not `email`) and splits the URL into `api_
 client = QGendaClient()
 ```
 
+## Timeouts
+
+Every request -- including the login POST -- is bounded by a timeout that defaults to **30 seconds** per phase (connect, read, write, pool). This is deliberately more generous than httpx's own 5-second default, which leaves this API no margin. Latency varies by network path: `/staffmember` answers in about a second from a laptop, but has been observed from a cloud VM taking over 5 seconds just to return response *headers* -- enough to turn every whole-roster pull into a `ReadTimeout`.
+
+```python
+# A slow batch job: give it longer
+client = QGendaClient(timeout=120.0)
+
+# Per-phase control, using httpx's own Timeout object
+import httpx
+client = QGendaClient(timeout=httpx.Timeout(10.0, read=180.0))
+
+# No timeout at all -- waits indefinitely
+client = QGendaClient(timeout=None)
+```
+
+The value applies to both HTTP clients the stack builds: the pooled client used for API calls and the short-lived one used for token refresh.
+
 ## Authentication
 
 Authentication is automatic. The client obtains an OAuth token on the first API call and refreshes it transparently before it expires (with a 60-second buffer). No `authenticate()` call needed.

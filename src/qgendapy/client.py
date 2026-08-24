@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import httpx
+
 from qgendapy._auth import AsyncAuth, Auth
 from qgendapy._cache import CacheBackend, NullCache
-from qgendapy._config import resolve_config
+from qgendapy._config import DEFAULT_TIMEOUT, resolve_config
 from qgendapy._transport import AsyncTransport, Transport
 from qgendapy.resources.company import AsyncCompanyResource, CompanyResource
 from qgendapy.resources.credentialing import (
@@ -66,14 +68,20 @@ class QGendaClient:
         company_key: str | None = None,
         base_url: str | None = None,
         cache: CacheBackend | None = None,
+        timeout: float | httpx.Timeout | None = DEFAULT_TIMEOUT,
     ) -> None:
         config = resolve_config(
             email=email, password=password, company_key=company_key, base_url=base_url
         )
         self._config = config
         self._cache = cache or NullCache()
-        self._auth = Auth(email=config.email, password=config.password, base_url=config.base_url)
-        self._transport = Transport(auth=self._auth, base_url=config.base_url)
+        self._auth = Auth(
+            email=config.email,
+            password=config.password,
+            base_url=config.base_url,
+            timeout=timeout,
+        )
+        self._transport = Transport(auth=self._auth, base_url=config.base_url, timeout=timeout)
 
         # Resources
         self.schedule = ScheduleResource(self)
@@ -125,6 +133,7 @@ class AsyncQGendaClient:
         company_key: str | None = None,
         base_url: str | None = None,
         cache: CacheBackend | None = None,
+        timeout: float | httpx.Timeout | None = DEFAULT_TIMEOUT,
     ) -> None:
         config = resolve_config(
             email=email, password=password, company_key=company_key, base_url=base_url
@@ -132,9 +141,14 @@ class AsyncQGendaClient:
         self._config = config
         self._cache = cache or NullCache()
         self._auth = AsyncAuth(
-            email=config.email, password=config.password, base_url=config.base_url
+            email=config.email,
+            password=config.password,
+            base_url=config.base_url,
+            timeout=timeout,
         )
-        self._transport = AsyncTransport(auth=self._auth, base_url=config.base_url)
+        self._transport = AsyncTransport(
+            auth=self._auth, base_url=config.base_url, timeout=timeout
+        )
 
         # Resources
         self.schedule = AsyncScheduleResource(self)

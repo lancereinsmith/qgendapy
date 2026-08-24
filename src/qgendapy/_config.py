@@ -6,6 +6,16 @@ from dataclasses import dataclass
 
 from qgendapy.exceptions import ConfigurationError
 
+#: Seconds allowed for each phase of an HTTP request (connect, read, write, pool).
+#:
+#: httpx defaults to 5s, which leaves this API no margin. Latency varies by
+#: network path: /staffmember answers in about a second from a laptop, but was
+#: observed from a GCP VM taking over 5s just to return response *headers*,
+#: which turned a whole-roster pull into a hard ReadTimeout every time. A batch
+#: read against a slow upstream is nearly always better off waiting than
+#: failing, so the default is generous rather than tight.
+DEFAULT_TIMEOUT = 30.0
+
 
 @dataclass
 class QGendaConfig:

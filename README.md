@@ -59,6 +59,11 @@ client = QGendaClient()
 
 Legacy `QGENDA_CONF_FILE` INI format is also supported.
 
+Requests time out after 30 seconds per phase by default — more generous than
+httpx's own 5-second default, which leaves this API no margin on slower network
+paths. Override it with `QGendaClient(timeout=...)`, passing a float, an
+`httpx.Timeout` for per-phase control, or `None` to wait indefinitely.
+
 ## Related-entity loading: `includes=` vs OData `$expand`
 
 QGenda offers **two** ways to ask for related entities, and they aren't

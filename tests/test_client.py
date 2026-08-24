@@ -1,8 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from qgendapy._cache import NullCache
+from qgendapy._config import DEFAULT_TIMEOUT
 from qgendapy.client import AsyncQGendaClient, QGendaClient
 from qgendapy.resources.company import AsyncCompanyResource, CompanyResource
 from qgendapy.resources.credentialing import (
@@ -109,3 +111,25 @@ class TestAsyncQGendaClientContextManager:
         async with AsyncQGendaClient(email="a@b.com", password="pw", company_key="ck") as client:
             pass
         client._transport.close.assert_awaited_once()
+
+
+class TestClientTimeoutWiring:
+    """A timeout is only useful if it reaches both HTTP clients the stack builds."""
+
+    def test_timeout_reaches_transport_and_auth(self):
+        client = QGendaClient(email="a@b.com", password="pw", company_key="ck", timeout=45.0)
+
+        assert client._transport._client.timeout == httpx.Timeout(45.0)
+        assert client._auth._timeout == 45.0
+
+    def test_default_timeout_is_generous_enough_for_a_slow_api(self):
+        client = QGendaClient(email="a@b.com", password="pw", company_key="ck")
+
+        assert client._transport._client.timeout == httpx.Timeout(DEFAULT_TIMEOUT)
+        assert client._auth._timeout == DEFAULT_TIMEOUT
+
+    def test_async_timeout_reaches_transport_and_auth(self):
+        client = AsyncQGendaClient(email="a@b.com", password="pw", company_key="ck", timeout=45.0)
+
+        assert client._transport._client.timeout == httpx.Timeout(45.0)
+        assert client._auth._timeout == 45.0

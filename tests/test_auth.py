@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 from qgendapy._auth import AsyncAuth, Auth
+from qgendapy._config import DEFAULT_TIMEOUT
 from qgendapy.exceptions import AuthenticationError
 
 
@@ -92,6 +93,34 @@ class TestAuth:
         assert all(r == "tok123" for r in results)
 
 
+class TestAuthTimeout:
+    """The login POST gets its own httpx.Client, so it needs the timeout too."""
+
+    @patch("qgendapy._auth.httpx.Client")
+    def test_refresh_uses_the_default_timeout(self, mock_client_cls):
+        mock_client = MagicMock()
+        mock_client_cls.return_value.__enter__ = MagicMock(return_value=mock_client)
+        mock_client_cls.return_value.__exit__ = MagicMock(return_value=False)
+        mock_client.post.return_value = _make_login_response()
+
+        auth = Auth(email="a@b.com", password="pw", base_url="https://api.test.com")
+        _ = auth.token
+
+        assert mock_client_cls.call_args.kwargs["timeout"] == DEFAULT_TIMEOUT
+
+    @patch("qgendapy._auth.httpx.Client")
+    def test_refresh_uses_the_configured_timeout(self, mock_client_cls):
+        mock_client = MagicMock()
+        mock_client_cls.return_value.__enter__ = MagicMock(return_value=mock_client)
+        mock_client_cls.return_value.__exit__ = MagicMock(return_value=False)
+        mock_client.post.return_value = _make_login_response()
+
+        auth = Auth(email="a@b.com", password="pw", base_url="https://api.test.com", timeout=45.0)
+        _ = auth.token
+
+        assert mock_client_cls.call_args.kwargs["timeout"] == 45.0
+
+
 def _make_async_client_mock(post_response):
     """Create a mock that works as an async context manager returning a client with .post()."""
     mock_client = MagicMock()
@@ -115,7 +144,9 @@ class TestAsyncAuth:
     @pytest.mark.asyncio
     @patch("qgendapy._auth.httpx.AsyncClient")
     async def test_get_token_triggers_refresh(self, mock_client_cls):
-        mock_client_cls.side_effect = lambda: _make_async_client_mock(_make_login_response())()
+        mock_client_cls.side_effect = lambda **kwargs: _make_async_client_mock(
+            _make_login_response()
+        )()
 
         auth = AsyncAuth(email="a@b.com", password="pw", base_url="https://api.test.com")
         token = await auth.get_token()
@@ -125,10 +156,24 @@ class TestAsyncAuth:
     @pytest.mark.asyncio
     @patch("qgendapy._auth.httpx.AsyncClient")
     async def test_login_failure_raises(self, mock_client_cls):
-        mock_client_cls.side_effect = lambda: _make_async_client_mock(
+        mock_client_cls.side_effect = lambda **kwargs: _make_async_client_mock(
             _make_login_response(status_code=401)
         )()
 
         auth = AsyncAuth(email="a@b.com", password="pw", base_url="https://api.test.com")
         with pytest.raises(AuthenticationError, match="401"):
             await auth.get_token()
+
+    @pytest.mark.asyncio
+    @patch("qgendapy._auth.httpx.AsyncClient")
+    async def test_refresh_uses_the_configured_timeout(self, mock_client_cls):
+        mock_client_cls.side_effect = lambda **kwargs: _make_async_client_mock(
+            _make_login_response()
+        )()
+
+        auth = AsyncAuth(
+            email="a@b.com", password="pw", base_url="https://api.test.com", timeout=45.0
+        )
+        await auth.get_token()
+
+        assert mock_client_cls.call_args.kwargs["timeout"] == 45.0
